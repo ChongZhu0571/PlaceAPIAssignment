@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <!--<com.mancj.materialsearchbar.MaterialSearchBar
+        android:id="@+id/searchBar"
+        style="@style/MaterialSearchBarLight"
+        app:mt_navIconEnabled="true"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="50dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:mt_hint="Search address"
+        app:mt_maxSuggestionsCount="10"
+        tools:layout_editor_absoluteX="15dp"
+        />-->
+
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        tools:context=".MapsFragment" />
+
+    <fragment
+        android:id="@+id/fragment_autocomplete"
+        android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="45dp"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/btn_search"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_icons8_search"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="45dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:onClick="search_clicked"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        />
+    <ImageButton
+        android:id="@+id/btn_myLocation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:src="@drawable/ic_mylocation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/btn_search"
+        android:layout_marginBottom="5dp"
+        android:layout_marginRight="20dp"
+        android:onClick="myLocation_clicked"
+
+        />
+
+
+    <Switch
+        android:id="@+id/swh_outcome"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="59dp"
+        android:layout_height="24dp"
+        android:layout_marginTop="80dp"
+        android:layout_marginEnd="96dp"
+        android:padding="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:onClick="swicth_clicked"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="serif-monospace"
+        android:text="Map"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/swh_outcome"
+        app:layout_constraintEnd_toStartOf="@+id/swh_outcome"
+        app:layout_constraintRight_toLeftOf="@+id/swh_outcome"
+        app:layout_constraintTop_toTopOf="@+id/swh_outcome" />
+
+    <TextView
+        android:layout_width="111dp"
+        android:layout_height="27dp"
+        android:layout_marginStart="5dp"
+        android:fontFamily="serif-monospace"
+
+        android:text="Table"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/swh_outcome"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/swh_outcome"
+        app:layout_constraintTop_toTopOf="@+id/swh_outcome" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/view_cardView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/swh_outcome"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_myLocation"
+        android:visibility="invisible"
+        android:backgroundTint="@color/light_grey"
+        >
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/view_recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            />
+
+    </androidx.cardview.widget.CardView>
+</androidx.constraintlayout.widget.ConstraintLayout>
