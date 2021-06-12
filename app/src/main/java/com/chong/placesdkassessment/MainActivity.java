@@ -1,6 +1,7 @@
 package com.chong.placesdkassessment;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
@@ -10,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -18,15 +20,19 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.api.ApiException;
@@ -38,6 +44,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -64,11 +71,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.zip.Inflater;
 
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 
 public class MainActivity extends AppCompatActivity implements GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener, GoogleMap.OnCameraIdleListener,
-        OnMapReadyCallback{
+        OnMapReadyCallback, MyAdaptor.AdapterCallback,GoogleMap.InfoWindowAdapter {
     PlacesClient placesClient;
     ImageButton btn_search;
     ImageButton btn_myLocation;
@@ -164,7 +172,7 @@ public class MainActivity extends AppCompatActivity implements GoogleMap.OnMapCl
         });
     }
     public  void getSearchInfoByMap(String location){
-        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location="+location+"&radius=1500&type=restaurant&key="+getString(R.string.place_api);
+        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location="+location+"&radius=1500&rankby=prominence&key="+getString(R.string.place_api);
         Log.e("url",url);
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
@@ -195,8 +203,7 @@ public class MainActivity extends AppCompatActivity implements GoogleMap.OnMapCl
     }
 
     public  void getSearchInfoByTable(String location){
-        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location="+location+"&radius=1500&type=restaurant&key="+getString(R.string.place_api);
-        Log.e("url",url);
+        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location="+location+"&radius=1500&rankby=prominence&key="+getString(R.string.place_api);
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
             @Override
@@ -206,28 +213,32 @@ public class MainActivity extends AppCompatActivity implements GoogleMap.OnMapCl
                     List<String> statuses = new ArrayList<>();
                     List<String> addresses = new ArrayList<>();
                     List<String> images_refs = new ArrayList<>();
+                    List<String> placeIds  = new ArrayList<>();
                     JSONArray results = response.getJSONArray("results");
                     for(int i = 0;i<results.length();i++){
                         String name = results.getJSONObject(i).getString("name");
-                        boolean status = results.getJSONObject(i).getJSONObject("opening_hours").getBoolean("open_now");
                         String sts = "Open Now: No";
-                        if(status){
-                            sts = "Open Now: Yes";
+                        if(results.getJSONObject(i).has("opening_hours")){
+                            boolean status = results.getJSONObject(i).getJSONObject("opening_hours").getBoolean("open_now");
+                            if(status){
+                                sts = "Open Now: Yes";
+                            }
                         }
                         String address = results.getJSONObject(i).getString("vicinity");
+                        String placeId = results.getJSONObject(i).getString("place_id");
                         JSONArray photos = results.getJSONObject(i).getJSONArray("photos");
                         String image_ref = photos.getJSONObject(0).getString("photo_reference");
-                        images_refs.add(image_ref);
                         names.add(name);
+                        placeIds.add(placeId);
                         statuses.add(sts);
                         addresses.add(address);
-                 //       String imageUrl = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference="+image_ref+"&key="+getString(R.string.place_api);
-                        MyAdaptor myAdaptor = new MyAdaptor(names,statuses,addresses);
+                        String ImageUrl = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference="+image_ref+"&key="+getString(R.string.place_api);
+                        images_refs.add(ImageUrl);
+                        MyAdaptor myAdaptor = new MyAdaptor(names,placeIds,images_refs,statuses,addresses,getApplicationContext(),MainActivity.this);
                         recyclerView.setAdapter(myAdaptor);
                         recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
-
-
                     }
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                     Log.e("response: ",e.toString());
@@ -249,10 +260,36 @@ public class MainActivity extends AppCompatActivity implements GoogleMap.OnMapCl
 
     @Override
     public void onMapClick(@NonNull LatLng latLng) {
-        googleMap.clear();
-        MarkerOptions options = new MarkerOptions().position(latLng).title("you tap here");
-        googleMap.addMarker(options);
-        Toast.makeText(getApplicationContext(),"tapped, ponit= "+String.valueOf(latLng.longitude),Toast.LENGTH_LONG).show();
+        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location="+String.valueOf(latLng.latitude)+","+String.valueOf(latLng.longitude)+"&radius=100&rankby=prominence&key="+getString(R.string.place_api);
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    JSONArray results = response.getJSONArray("results");
+                    String name = results.getJSONObject(1).getString("name");
+                    String address = results.getJSONObject(1).getString("vicinity");
+                    String type = results.getJSONObject(1).getJSONArray("types").getString(0);
+                    googleMap.clear();
+                    MarkerOptions options = new MarkerOptions().position(latLng).title(name+" ("+type+")").snippet(address);
+                   Marker marker = googleMap.addMarker(options);
+                   marker.showInfoWindow();
+                    }
+
+                 catch (JSONException e) {
+                    e.printStackTrace();
+                    Log.e("response: ",e.toString());
+                }
+            }
+            }
+        , new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
+        requestQueue.add(jsonObjectRequest);
+
 
     }
 
@@ -287,9 +324,61 @@ public class MainActivity extends AppCompatActivity implements GoogleMap.OnMapCl
         }
     }
 
-    public void list_clicked(View view) {
+
+
+    @Override
+    public void onMethodCallback(String placeID) {
         cardView.setVisibility(View.INVISIBLE);
         btn_switch.setChecked(false);
+        Log.e("place id:",placeID);
+        getSelectedPlaceDetails(placeID);
+    }
+    //Check place details from place api by placeId
+    public void getSelectedPlaceDetails(String placeID){
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        String url = "https://maps.googleapis.com/maps/api/place/details/json?place_id="+placeID+"&key="+getString(R.string.place_api);
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    JSONObject results = response.getJSONObject("result");
+                       String  type = results.getJSONArray("types").get(0)+", "+results.getJSONArray("types").get(1);
+                        String phone = results.getString("international_phone_number");
+                    LatLng latLng = new LatLng(results.getJSONObject("geometry").getJSONObject("location").getDouble("lat"),results.getJSONObject("geometry").getJSONObject("location").getDouble("lng"));
+                    MarkerOptions options = new MarkerOptions().position(latLng).title("Type: "+type).snippet("Phone: "+phone);
+                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng,17));
+                    googleMap.clear();
+                    Marker marker =  googleMap.addMarker(options);
+                    marker.showInfoWindow();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
+        requestQueue.add(jsonObjectRequest);
+    }
+
+    @Nullable
+    @Override
+    public View getInfoWindow(@NonNull Marker marker) {
+        LayoutInflater inflater = (LayoutInflater)this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View v = inflater.inflate(R.layout.markerlayout,null);
+        TextView textView1 = v.findViewById(R.id.marker_name);
+        TextView textView2 = v.findViewById(R.id.marker_phone);
+        textView1.setText(marker.getTitle());
+        textView2.setText(marker.getSnippet());
+        return  v;
+    }
+
+    @Nullable
+    @Override
+    public View getInfoContents(@NonNull Marker marker) {
+        return null;
     }
 
 /*    public void getCurrentPlace() {
